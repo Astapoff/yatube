@@ -65,11 +65,15 @@ def profile(request, username):
     page_number = request.GET.get('page')
     # Получаем набор записей для страницы с запрошенным номером
     page_obj = paginator.get_page(page_number)
+    following = (
+        request.user.is_authenticated and Follow.objects.filter(
+            user=request.user, author=author).exists())
     context = {
         'author': author,
         'count_posts': count_posts,
         'page_obj': page_obj,
         'profile_list': profile_list,
+        'following': following,
     }
     return render(request, template, context)
 
