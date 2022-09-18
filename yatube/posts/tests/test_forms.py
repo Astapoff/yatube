@@ -134,30 +134,3 @@ class AddCommentFormTests(TestCase):
         self.authorized_client = Client()
         # Авторизуем автора тестового поста
         self.authorized_client.force_login(self.user)
-
-    def test_add_comment(self):
-        """Валидная форма создает комментарий к посту."""
-        # Подсчитаем количество комментариев к посту
-        posts_count = Comment.objects.filter(post__id=self.post.id).count()
-        # Подготавливаем данные для передачи в форму
-        form_data = {
-            'text': 'Комментарий 1',
-        }
-        response = self.authorized_client.post(reverse(
-            'posts:post_detail', kwargs={'post_id': self.post.id}),
-            data=form_data,
-            follow=True
-        )
-        # Проверяем, сработал ли редирект
-        self.assertRedirects(response, reverse(
-            'posts:post_detail', kwargs={'post_id': self.post.id}))
-        # Проверяем, увеличилось ли число комментариев
-        self.assertEqual(
-            Comment.objects.filter(
-                post__id=self.post.id).count(), posts_count + 1)
-        # Проверяем, что комментарий создан
-        self.assertTrue(
-            Comment.objects.filter(
-                text='Комментарий 1'
-            ).exists()
-        )
