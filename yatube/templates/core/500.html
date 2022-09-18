@@ -1,0 +1,7 @@
+{% extends "base.html" %}
+{% block title %}Custom 404{% endblock %}
+{% block content %}
+  <h1>HTTP status 500 internal server error (HTTP статус 500 внутренняя ошибка сервера)</h1>
+  <p> При попытке загрузить страницу - {{ path }} , произошла ошибка</p>
+  <a href="{% url 'posts:index' %}">Идите на главную</a>
+{% endblock %}
