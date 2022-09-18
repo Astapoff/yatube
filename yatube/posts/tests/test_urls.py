@@ -119,4 +119,5 @@ class PostsURLTests(TestCase):
     def test_error_403(self):
         client = Client(enforce_csrf_checks=True)
         response = client.post("/")
-        self.assertContains(response, "Test template for CSRF failure", status_code=403)
+        self.assertContains(
+            response, "Test template for CSRF failure", status_code=403)
