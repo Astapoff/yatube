@@ -12,9 +12,6 @@ class PostForm(forms.ModelForm):
             'group': ('Группа, к которой относится пост'),
             'image': ('Прикрепите изображение'),
         }
-        # Пытался во все записи добавить заголовок,
-        # но, спустя пару часов миграций туда-сюда, сдался.
-        # fields = ('title', 'text', 'group')
 
 
 class CommentForm(forms.ModelForm):

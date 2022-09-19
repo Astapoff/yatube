@@ -14,15 +14,6 @@ class Group(models.Model):
 
 
 class Post(models.Model):
-    # Тут я пытался заголовок к постам добавить, но не вышло,
-    # джанго ругается на созданные посты, которые без заголовка,
-    # несмотря на то, что поле title я делал необязательным... может потом.
-    # title = models.CharField(
-    # max_length=100,
-    # null=True,
-    # blank=True,
-    # default='',
-    # verbose_name='Заголовок')
     text = models.TextField(
         'Текст поста',
         help_text='Введите текст поста')

@@ -59,11 +59,9 @@ class PostCreateFormTests(TestCase):
 
     def test_post_create(self):
         """Валидная форма создает запись в Post."""
-        # Подсчитаем количество записей в Post
         posts_count = Post.objects.count()
-        # Подготавливаем данные для передачи в форму
         form_data = {
-            'text': 'Тестовый текст',
+            'text': 'Проверка',
             'group': self.group.id
         }
         response = self.authorized_client.post(
@@ -71,15 +69,12 @@ class PostCreateFormTests(TestCase):
             data=form_data,
             follow=True
         )
-        # Проверяем, сработал ли редирект
         self.assertRedirects(response, reverse(
             'posts:profile', kwargs={'username': self.user}))
-        # Проверяем, увеличилось ли число постов
         self.assertEqual(Post.objects.count(), posts_count + 1)
-        # Проверяем, что создалась запись
         self.assertTrue(
             Post.objects.filter(
-                text='Тестовый текст',
+                text='Проверка',
                 group=self.group.id
             ).exists()
         )
@@ -89,7 +84,6 @@ class PostCreateFormTests(TestCase):
         # Подготавливаем данные для передачи в форму
         form_data = PostForm(instance=self.post).initial
         form_data['text'] = 'Новый текст'
-        self.post.author = self.user
         response = self.authorized_client.post(
             reverse('posts:post_edit', kwargs={'post_id': self.post.id}),
             data=form_data,
@@ -125,12 +119,25 @@ class AddCommentFormTests(TestCase):
     @classmethod
     def tearDownClass(cls):
         super().tearDownClass()
-        # Метод shutil.rmtree удаляет директорию и всё её содержимое
         shutil.rmtree(TEMP_MEDIA_ROOT, ignore_errors=True)
 
     def setUp(self):
         super().setUp()
-        # Создаем авторизованный клиент
         self.authorized_client = Client()
-        # Авторизуем автора тестового поста
         self.authorized_client.force_login(self.user)
+
+    def test_add_comment(self):
+        """Проверка: авторизованный пользователь может
+        оставлять комментарии, а неавторизованный не может"""
+        self.authorized_client.post(
+            f'/posts/{self.post.id}/comment/', {
+                'text': "тестовый комментарий"}, follow=True)
+        response = self.authorized_client.get(
+            f'/posts/{self.post.id}/')
+        self.assertContains(response, 'тестовый комментарий')
+        self.authorized_client.logout()
+        self.authorized_client.post(
+            f'/posts/{self.post.id}/comment/', {'text': "гость"}, follow=True)
+        response = self.authorized_client.get(
+            f'/posts/{self.post.id}/')
+        self.assertNotContains(response, 'гость')

@@ -10,7 +10,7 @@ from django.core.cache import cache
 from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 
-from posts.models import Group, Post
+from posts.models import Group, Post, Follow
 
 User = get_user_model()
 
@@ -52,21 +52,17 @@ class PostsPagesTests(TestCase):
     @classmethod
     def tearDownClass(cls):
         super().tearDownClass()
-        # Метод shutil.rmtree удаляет директорию и всё её содержимое
         shutil.rmtree(TEMP_MEDIA_ROOT, ignore_errors=True)
 
     def setUp(self):
         super().setUp()
-        # Создаём неавторизованный клиент
         self.guest_client = Client()
-        # Создаём авторизованный клиент
         self.authorized_client = Client()
         self.authorized_client.force_login(self.user)
 
     # Проверяем используемые шаблоны
     def test_pages_uses_correct_template(self):
         """URL-адрес использует соответствующий шаблон."""
-        # Собираем в словарь пары "имя_html_шаблона: reverse(name)"
         templates_page_names = {
             reverse('posts:index'): 'posts/index.html',
             reverse('posts:group_list', kwargs={'slug': self.group.slug}):
@@ -79,8 +75,6 @@ class PostsPagesTests(TestCase):
             reverse('posts:post_edit', args={self.post.id}):
                 'posts/create_post.html',
         }
-        # Проверяем, что при обращении к name
-        # вызывается соответствующий HTML-шаблон
         for reverse_name, template in templates_page_names.items():
             with self.subTest(template=template):
                 response = self.authorized_client.get(reverse_name)
@@ -91,10 +85,7 @@ class PostsPagesTests(TestCase):
         response = self.guest_client.get(reverse('posts:index'))
         content = response.context['page_obj']
         for post in content:
-            self.assertIsInstance(post, Post)
-            self.assertEqual(post.author, self.post.author)
-            self.assertEqual(post.group, self.post.group)
-            self.assertEqual(post.image, self.post.image)
+            self.assertEqual(post, self.post)
 
     def test_group_list_show_correct_context(self):
         """Шаблон group_list сформирован с правильным контекстом."""
@@ -102,9 +93,7 @@ class PostsPagesTests(TestCase):
             reverse('posts:group_list', kwargs={'slug': self.group.slug}))
         content = response.context.get('page_obj')
         for post in content:
-            self.assertEqual(post.author, self.post.author)
-            self.assertEqual(post.group, self.post.group)
-            self.assertEqual(post.image, self.post.image)
+            self.assertEqual(post, self.post)
 
     def test_post_create_show_correct_context(self):
         """Шаблон post_create сформирован с правильным контекстом."""
@@ -146,9 +135,7 @@ class PostsPagesTests(TestCase):
             reverse('posts:profile', kwargs={'username': self.post.author}))
         content = response.context.get('page_obj')
         for post in content:
-            self.assertEqual(post.author, self.post.author)
-            self.assertEqual(post.group, self.post.group)
-            self.assertEqual(post.image, self.post.image)
+            self.assertEqual(post, self.post)
 
     def test_cache_index(self):
         """Проверка хранения и очищения кэша для index."""
@@ -221,3 +208,66 @@ class TestPaginatorPages(TestCase):
                 self.assertIsInstance(context_for_first, Page)
                 self.assertEqual(len(context_for_first), COUNT_POSTS_ON_PAGE)
                 self.assertEqual(context_for_second, post_for_second)
+
+
+class FollowTests(TestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.follower = User.objects.create_user(username='follower')
+        cls.following = User.objects.create_user(username='following')
+        cls.anonym = User.objects.create_user(username='anonym')
+        cls.group = Group.objects.create(
+            title='Заголовок',
+            slug='test-slug',
+            description='Тестовое описание',
+        )
+        cls.post = Post.objects.create(
+            author=cls.following,
+            text='Тестовый текст',
+            group=cls.group
+        )
+
+    def setUp(self):
+        self.follower_client = Client()
+        self.following_client = Client()
+        self.follower_client.force_login(self.follower)
+        self.following_client.force_login(self.following)
+
+    def test_profile_follow(self):
+        """Проверка создания подписки на автора"""
+        follow = Follow.objects.all().count()
+        self.follower_client.get(reverse(
+            'posts:profile_follow',
+            kwargs={'username': self.following.username}))
+        self.assertEqual(Follow.objects.all().count(), follow + 1)
+
+    def test_profile_unfollow(self):
+        """Проверка отписки (удаления подписки)"""
+        self.follower_client.get(reverse(
+            'posts:profile_follow',
+            kwargs={'username': self.following.username}))
+        self.follower_client.get(reverse(
+            'posts:profile_unfollow',
+            kwargs={'username': self.following.username}))
+        self.assertEqual(Follow.objects.all().count(), 0)
+
+    def test_follow(self):
+        """Проверка отображения у подписчика нового поста автора"""
+        Follow.objects.create(
+            user=self.follower,
+            author=self.following,
+        )
+        response = self.follower_client.get(reverse('posts:follow_index'))
+        self.assertContains(response, self.post.text)
+
+    def test_anonymous_follow(self):
+        """У не подписанного юзера не отображается пост автора"""
+        test_client = Client()
+        test_client.force_login(self.anonym)
+        Follow.objects.create(
+            user=self.follower,
+            author=self.following,
+        )
+        response = test_client.get(reverse('posts:follow_index'))
+        self.assertNotContains(response, 'Тестовый текст')
