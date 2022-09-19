@@ -27,13 +27,10 @@ class PostsURLTests(TestCase):
 
     def setUp(self):
         super().setUp()
-        # Создаём экземпляр клиента. Он неавторизован.
         self.guest_client = Client()
-        # Создаём экземпляр клиента. Авторизован.
         self.authorized_client = Client()
         self.authorized_client.force_login(self.user)
 
-    # Проверяем доступы для неавторизованного
     def test_pages_for_guest(self):
         """Страницы: главная, посты группы, профайл пользователя, детали поста
         доступны неавторизованному пользователю
@@ -55,7 +52,6 @@ class PostsURLTests(TestCase):
                 response = self.guest_client.get(page)
                 self.assertEqual(response.status_code, HTTPStatus.OK)
 
-    # Проверяем доступы для авторизованного пользователя
     def test_post_create(self):
         """Форма создания нового поста доступна
         авторизованному пользователю
@@ -88,10 +84,8 @@ class PostsURLTests(TestCase):
         self.assertRedirects(
             response, f'/auth/login/?next=/posts/{self.post.id}/edit/')
 
-    # Проверяем правильность вызова шаблонов
     def test_urls_uses_correct_template(self):
         """URL-адрес использует соответствующий шаблон."""
-        # Шаблоны по адресам
         templates_url_names = {
             reverse('posts:index'): 'posts/index.html',
             reverse('posts:group_list', kwargs={'slug': self.group.slug}):

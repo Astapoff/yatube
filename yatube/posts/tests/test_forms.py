@@ -47,14 +47,11 @@ class PostCreateFormTests(TestCase):
     @classmethod
     def tearDownClass(cls):
         super().tearDownClass()
-        # Метод shutil.rmtree удаляет директорию и всё её содержимое
         shutil.rmtree(TEMP_MEDIA_ROOT, ignore_errors=True)
 
     def setUp(self):
         super().setUp()
-        # Создаем авторизованный клиент
         self.authorized_client = Client()
-        # Авторизуем автора тестового поста
         self.authorized_client.force_login(self.user)
 
     def test_post_create(self):
@@ -81,7 +78,6 @@ class PostCreateFormTests(TestCase):
 
     def test_edit_post(self):
         """Валидная форма редактирует запись в Post."""
-        # Подготавливаем данные для передачи в форму
         form_data = PostForm(instance=self.post).initial
         form_data['text'] = 'Новый текст'
         response = self.authorized_client.post(
@@ -89,10 +85,8 @@ class PostCreateFormTests(TestCase):
             data=form_data,
             follow=True
         )
-        # Проверяем, сработал ли редирект
         self.assertRedirects(response, reverse(
             'posts:post_detail', kwargs={'post_id': self.post.id}))
-        # Проверяем, что запись отредактирована
         self.assertTrue(
             Post.objects.filter(
                 text='Новый текст'

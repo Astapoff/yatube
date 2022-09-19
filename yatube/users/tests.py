@@ -10,14 +10,11 @@ User = get_user_model()
 class PostsURLTests(TestCase):
     def setUp(self) -> None:
         super().setUp()
-        # Создаём экземпляр клиента. Он неавторизован.
         self.guest_client = Client()
         self.user = User.objects.create_user(username='Shekspir')
-        # Создаём экземпляр клиента. Авторизован.
         self.authorized_client = Client()
         self.authorized_client.force_login(self.user)
 
-    # Проверяем доступы для неавторизованного
     def test_pages_for_guest(self):
         """Страницы: login, logout, signup
         доступны неавторизованному пользователю
@@ -34,7 +31,6 @@ class PostsURLTests(TestCase):
                 response = self.guest_client.get(page)
                 self.assertEqual(response.status_code, HTTPStatus.OK)
 
-    # Проверяем доступы для авторизованного
     def test_pages_for_user(self):
         """Страницы: смены, восстановления пароля
         доступны неавторизованному пользователю
@@ -48,7 +44,6 @@ class PostsURLTests(TestCase):
                 response = self.authorized_client.get(page)
                 self.assertEqual(response.status_code, HTTPStatus.OK)
 
-    # Проверяем редиректы для неавторизованного
     def test_password_change_redirect_anonymous_on_login(self):
         """Страница по адресу /auth/password_change/
         перенаправит анонимного пользователя на страницу логина.
