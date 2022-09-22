@@ -3,8 +3,8 @@ from xml.dom import ValidationErr
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
 
-from .forms import PostForm, CommentForm
-from .models import Group, Post, User, Comment, Follow
+from .forms import CommentForm, PostForm
+from .models import Comment, Follow, Group, Post, User
 from .utils import my_paginator
 
 
@@ -44,7 +44,6 @@ def profile(request, username):
     context = {
         'author': author,
         'page_obj': page_obj,
-        'profile_list': profile_list,
         'following': following,
     }
     return render(request, template, context)

@@ -1,6 +1,5 @@
 from django.core.paginator import Paginator
 
-
 # Глобальная константа, определяющая количество последних записей.
 COUNT_LAST_POSTS = 10
 

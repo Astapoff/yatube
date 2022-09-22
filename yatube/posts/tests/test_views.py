@@ -1,16 +1,17 @@
 import shutil
 import tempfile
 
-from django import forms
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.core.cache import cache
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.paginator import Page
-from django.core.cache import cache
+from django.db.models.query import QuerySet
 from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 
-from posts.models import Group, Post, Follow
+from posts.forms import CommentForm, PostForm
+from posts.models import Follow, Group, Post
 
 User = get_user_model()
 
@@ -26,6 +27,7 @@ class PostsPagesTests(TestCase):
     def setUpClass(cls):
         super().setUpClass()
         cls.user = User.objects.create_user(username='Pushkin')
+        cls.follower = User.objects.create_user(username='Gena')
         cls.group = Group.objects.create(
             title='test_title',
             description='test_description',
@@ -59,6 +61,8 @@ class PostsPagesTests(TestCase):
         self.guest_client = Client()
         self.authorized_client = Client()
         self.authorized_client.force_login(self.user)
+        self.followers_client = Client()
+        self.followers_client.force_login(self.follower)
 
     # Проверяем используемые шаблоны
     def test_pages_uses_correct_template(self):
@@ -98,44 +102,39 @@ class PostsPagesTests(TestCase):
     def test_post_create_show_correct_context(self):
         """Шаблон post_create сформирован с правильным контекстом."""
         response = self.authorized_client.get(reverse('posts:post_create'))
-        form_fields = {
-            'text': forms.fields.CharField,
-            'group': forms.fields.ChoiceField,
-            'image': forms.fields.ImageField,
-        }
-        for value, expected in form_fields.items():
-            with self.subTest(value=value):
-                form_field = response.context['form'].fields[value]
-                self.assertIsInstance(form_field, expected)
+        form = response.context['form']
+        self.assertIsInstance(form, PostForm)
 
     def test_post_edit_show_correct_context(self):
         """Шаблон post_edit сформирован с правильным контекстом."""
         response = self.authorized_client.get(
             reverse('posts:post_edit', kwargs={'post_id': self.post.id}))
-        form_fields = {
-            'text': forms.fields.CharField,
-            'group': forms.fields.ChoiceField,
-            'image': forms.fields.ImageField,
-        }
-        for value, expected in form_fields.items():
-            with self.subTest(value=value):
-                form_field = response.context['form'].fields[value]
-                self.assertIsInstance(form_field, expected)
+        form = response.context['form']
+        self.assertIsInstance(form, PostForm)
+        self.assertTrue(response.context.get('is_edit'))
 
     def test_post_detail_show_correct_context(self):
         """Шаблон post_detail сформирован с правильным контекстом."""
         response = self.authorized_client.get(
             reverse('posts:post_detail', kwargs={'post_id': self.post.id}))
+        comments = response.context['comments']
+        form_for_comment = response.context['form']
         self.assertEqual(response.context['post'].text, 'Тестовый текст')
         self.assertEqual(response.context['post'].image, self.post.image)
+        self.assertIsInstance(comments, QuerySet)
+        self.assertIsInstance(form_for_comment, CommentForm)
 
     def test_profile_show_correct_context(self):
         """Шаблон profile сформирован с правильным контекстом."""
-        response = self.authorized_client.get(
+        response = self.followers_client.get(
             reverse('posts:profile', kwargs={'username': self.post.author}))
         content = response.context.get('page_obj')
+        author = response.context.get('author')
+        follow = response.context.get('following')
         for post in content:
             self.assertEqual(post, self.post)
+        self.assertEqual(author, self.user)
+        self.assertIsNotNone(follow)
 
     def test_cache_index(self):
         """Проверка хранения и очищения кэша для index."""

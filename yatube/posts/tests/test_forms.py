@@ -50,7 +50,6 @@ class PostCreateFormTests(TestCase):
         shutil.rmtree(TEMP_MEDIA_ROOT, ignore_errors=True)
 
     def setUp(self):
-        super().setUp()
         self.authorized_client = Client()
         self.authorized_client.force_login(self.user)
 
@@ -116,7 +115,6 @@ class AddCommentFormTests(TestCase):
         shutil.rmtree(TEMP_MEDIA_ROOT, ignore_errors=True)
 
     def setUp(self):
-        super().setUp()
         self.authorized_client = Client()
         self.authorized_client.force_login(self.user)
 
