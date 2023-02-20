@@ -38,10 +38,8 @@ class Post(models.Model):
         blank=True)
 
     def __str__(self):
-        # выводим текст поста
         return self.text
 
-    # Переопределение Meta
     class Meta:
         ordering = ["-pub_date"]
 
