@@ -21,7 +21,7 @@ Cоциальная сеть для публикации личных дневн
 **Клонируем репозиторий и заходим в его директорию:**
 
 ```shell
-git clone https://github.com/Astapoff/api_yamdb.git
+git clone https://github.com/Astapoff/yatube.git
 cd api_yamdb
 ```
 
